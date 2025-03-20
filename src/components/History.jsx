@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
@@ -10,27 +10,53 @@ const History = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [messagesPerPage] = useState(5);
     const API_URL = import.meta.env.VITE_API_URL;
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const fetchHistory = async () => {
-            try {
-                const response = await axios.get(`${API_URL}/chat/history`, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+    const formatDate = useCallback((dateString) => {
+        if (!dateString) {
+            return 'N/A';
+        }
+        try {
+            const date = new Date(dateString);
+            return format(date, 'yyyy-MM-dd HH:mm:ss'); // Customize the format as needed
+        } catch (formatError) {
+            console.error('Error formatting date:', formatError);
+            return 'Invalid Date';
+        }
+    }, []);
+
+    const fetchHistory = useCallback(async () => {
+        setLoading(true); // Start loading
+        try {
+          //  console.log("API_URL:", API_URL); // AÑADE ESTE LOG
+            const response = await axios.get(`${API_URL}/chat/history`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (Array.isArray(response.data)) {
                 setHistory(response.data);
                 setError('');
-            } catch (error) {
-                console.error('Error fetching chat history:', error);
-                setError('Failed to load chat history.');
+            } else {
+                console.warn('Unexpected data format:', response.data);
+                setError('Unexpected data format from server.');
                 setHistory([]);
             }
-        };
 
+        } catch (fetchError) {
+            console.error('Error fetching chat history:', fetchError);
+            setError('Failed to load chat history.');
+            setHistory([]);
+        } finally {
+            setLoading(false); // End loading
+        }
+    }, [API_URL, token]);
+
+    useEffect(() => {
         fetchHistory();
-    }, [token, API_URL]);
+    }, [fetchHistory]);
 
     const indexOfLastChat = currentPage * messagesPerPage;
     const indexOfFirstChat = indexOfLastChat - messagesPerPage;
@@ -38,28 +64,18 @@ const History = () => {
 
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-    const formatDate = (dateString) => {
-        if (!dateString) {
-            return 'N/A';
-        }
-        try {
-            const date = new Date(dateString);
-            return format(date, 'yyyy-MM-dd HH:mm:ss'); // Customize the format as needed
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return 'Invalid Date';
-        }
-    };
-
     return (
         <div className="container mx-auto p-4 overflow-auto">
             <h2 className="text-2xl font-semibold mb-4">Chat History</h2>
+
+            {/* Loading Indicator */}
+            {loading && <div className="text-center">Loading chat history...</div>}
 
             {/* Display error message */}
             {error && <div className="text-red-500 mb-4">{error}</div>}
 
             {/* Display chat history */}
-            {currentChats.length > 0 ? (
+            {!loading && currentChats.length > 0 ? (
                 <div>
                     {currentChats.map((chat) => (
                         <div key={chat.id} className="mb-6 border rounded-md shadow-sm overflow-hidden">
@@ -69,7 +85,7 @@ const History = () => {
                                 </h3>
                             </div>
 
-                            {chat.messages && Array.isArray(chat.messages) ? (  // AÑADIDO EL Array.isArray()
+                            {chat.messages && Array.isArray(chat.messages) ? (
                                 <table className="min-w-full bg-white border border-gray-200">
                                     <thead className="bg-gray-100">
                                         <tr>
@@ -103,11 +119,11 @@ const History = () => {
                     ))}
                 </div>
             ) : (
-                <p className="text-gray-500">No chat history available.</p>
+                !loading && <p className="text-gray-500">No chat history available.</p>
             )}
 
             {/* Pagination */}
-            {history.length > messagesPerPage && (
+            {history.length > messagesPerPage && Array.isArray(history) && (
                 <nav className="flex justify-center mt-4">
                     <ul className="flex list-style-none">
                         {Array.from({ length: Math.ceil(history.length / messagesPerPage) }, (_, i) => i + 1).map(
