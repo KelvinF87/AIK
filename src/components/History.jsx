@@ -27,17 +27,17 @@ const History = () => {
     const fetchHistory = useCallback(async () => {
         setLoading(true);
         try {
-            console.log('Fetching chat history from:', `${API_URL}/chat/history`);
+            // console.log('Fetching chat history from:', `${API_URL}/chat/history`);
 
             const response = await fetch(`${API_URL}/chat/history`, {
-                method: 'GET',
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
             });
 
-            console.log('Response status:', response.status);
+            // console.log('Response status:', response.status);
 
             if (!response.ok) {
                 // Try to parse JSON error message, but if it fails, use the text.
@@ -53,13 +53,13 @@ const History = () => {
             }
 
             const data = await response.json();
-            console.log('Response data:', data);
+            // console.log('Response data:', data);
 
             if (Array.isArray(data)) {
                 setHistory(data);
                 setError('');
             } else {
-                console.warn('Unexpected data format:', data);
+                // console.warn('Unexpected data format:', data);
                 setError('Unexpected data format from server.');
                 setHistory([]);
             }
