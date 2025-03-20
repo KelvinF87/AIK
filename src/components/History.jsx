@@ -69,7 +69,7 @@ const History = () => {
                                 </h3>
                             </div>
 
-                            {chat.messages.length > 0 ? (
+                            {chat.messages && Array.isArray(chat.messages) ? (  // AÑADIDO EL Array.isArray()
                                 <table className="min-w-full bg-white border border-gray-200">
                                     <thead className="bg-gray-100">
                                         <tr>
