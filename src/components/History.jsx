@@ -26,34 +26,39 @@ const History = () => {
     }, []);
 
     const fetchHistory = useCallback(async () => {
-        setLoading(true); // Start loading
+        setLoading(true);
         try {
-          //  console.log("API_URL:", API_URL); // AÑADE ESTE LOG
             const response = await axios.get(`${API_URL}/chat/history`, {
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
             });
-
-            if (Array.isArray(response.data)) {
-                setHistory(response.data);
-                setError('');
+    
+            // Verifica que la respuesta sea JSON
+            if (response.headers['content-type'].includes('application/json')) {
+                if (Array.isArray(response.data)) {
+                    setHistory(response.data);
+                    setError('');
+                } else {
+                    console.warn('Unexpected data format:', response.data);
+                    setError('Unexpected data format from server.');
+                    setHistory([]);
+                }
             } else {
-                console.warn('Unexpected data format:', response.data);
-                setError('Unexpected data format from server.');
+                console.error('Received non-JSON response:', response.data);
+                setError('Received non-JSON response from server.');
                 setHistory([]);
             }
-
         } catch (fetchError) {
             console.error('Error fetching chat history:', fetchError);
             setError('Failed to load chat history.');
             setHistory([]);
         } finally {
-            setLoading(false); // End loading
+            setLoading(false);
         }
     }, [API_URL, token]);
-
+    
     useEffect(() => {
         fetchHistory();
     }, [fetchHistory]);
