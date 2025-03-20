@@ -28,7 +28,7 @@ const History = () => {
         setLoading(true);
         try {
             console.log('Fetching chat history from:', `${API_URL}/chat/history`);
-
+    
             const response = await fetch(`${API_URL}/chat/history`, {
                 method: 'GET',
                 headers: {
@@ -36,14 +36,18 @@ const History = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-
+    
+            console.log('Response status:', response.status);
+    
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-
+    
             const data = await response.json();
             console.log('Response data:', data);
-
+    
             if (Array.isArray(data)) {
                 setHistory(data);
                 setError('');
@@ -60,6 +64,7 @@ const History = () => {
             setLoading(false);
         }
     }, [API_URL, token]);
+    
 
     useEffect(() => {
         fetchHistory();
