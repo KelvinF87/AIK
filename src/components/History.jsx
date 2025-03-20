@@ -28,14 +28,19 @@ const History = () => {
     const fetchHistory = useCallback(async () => {
         setLoading(true);
         try {
+            console.log('API URL:', API_URL);
+            console.log('Token:', token);
+    
             const response = await axios.get(`${API_URL}/chat/history`, {
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
     
-            // Verifica que la respuesta sea JSON
+            console.log('Response status:', response.status);
+            console.log('Response data:', response.data);
+    
             if (response.headers['content-type'].includes('application/json')) {
                 if (Array.isArray(response.data)) {
                     setHistory(response.data);
@@ -58,6 +63,7 @@ const History = () => {
             setLoading(false);
         }
     }, [API_URL, token]);
+    
     
     useEffect(() => {
         fetchHistory();
