@@ -28,7 +28,7 @@ const History = () => {
         setLoading(true);
         try {
             console.log('Fetching chat history from:', `${API_URL}/chat/history`);
-    
+
             const response = await fetch(`${API_URL}/chat/history`, {
                 method: 'GET',
                 headers: {
@@ -36,18 +36,25 @@ const History = () => {
                     Authorization: `Bearer ${token}`,
                 },
             });
-    
+
             console.log('Response status:', response.status);
-    
+
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Try to parse JSON error message, but if it fails, use the text.
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage; // Use the error message from JSON if available
+                } catch (jsonError) {
+                    const errorText = await response.text();
+                    errorMessage = errorText || errorMessage; // Use the plain text if JSON parsing fails.
+                }
+                throw new Error(errorMessage);
             }
-    
+
             const data = await response.json();
             console.log('Response data:', data);
-    
+
             if (Array.isArray(data)) {
                 setHistory(data);
                 setError('');
@@ -58,13 +65,13 @@ const History = () => {
             }
         } catch (fetchError) {
             console.error('Error fetching chat history:', fetchError);
-            setError('Failed to load chat history.');
+            setError(`Failed to load chat history: ${fetchError.message}`); //Include message
             setHistory([]);
         } finally {
             setLoading(false);
         }
     }, [API_URL, token]);
-    
+
 
     useEffect(() => {
         fetchHistory();
