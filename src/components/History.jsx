@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
 
@@ -18,7 +17,7 @@ const History = () => {
         }
         try {
             const date = new Date(dateString);
-            return format(date, 'yyyy-MM-dd HH:mm:ss'); // Customize the format as needed
+            return format(date, 'yyyy-MM-dd HH:mm:ss');
         } catch (formatError) {
             console.error('Error formatting date:', formatError);
             return 'Invalid Date';
@@ -28,31 +27,29 @@ const History = () => {
     const fetchHistory = useCallback(async () => {
         setLoading(true);
         try {
-            console.log('API URL:', API_URL);
-            console.log('Token:', token);
-    
-            const response = await axios.get(`${API_URL}/chat/history`, {
+            console.log('Fetching chat history from:', `${API_URL}/chat/history`);
+
+            const response = await fetch(`${API_URL}/chat/history`, {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
             });
-    
-            console.log('Response status:', response.status);
-            console.log('Response data:', response.data);
-    
-            if (response.headers['content-type'].includes('application/json')) {
-                if (Array.isArray(response.data)) {
-                    setHistory(response.data);
-                    setError('');
-                } else {
-                    console.warn('Unexpected data format:', response.data);
-                    setError('Unexpected data format from server.');
-                    setHistory([]);
-                }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Response data:', data);
+
+            if (Array.isArray(data)) {
+                setHistory(data);
+                setError('');
             } else {
-                console.error('Received non-JSON response:', response.data);
-                setError('Received non-JSON response from server.');
+                console.warn('Unexpected data format:', data);
+                setError('Unexpected data format from server.');
                 setHistory([]);
             }
         } catch (fetchError) {
@@ -63,8 +60,7 @@ const History = () => {
             setLoading(false);
         }
     }, [API_URL, token]);
-    
-    
+
     useEffect(() => {
         fetchHistory();
     }, [fetchHistory]);
@@ -79,13 +75,10 @@ const History = () => {
         <div className="container mx-auto p-4 overflow-auto">
             <h2 className="text-2xl font-semibold mb-4">Chat History</h2>
 
-            {/* Loading Indicator */}
             {loading && <div className="text-center">Loading chat history...</div>}
 
-            {/* Display error message */}
             {error && <div className="text-red-500 mb-4">{error}</div>}
 
-            {/* Display chat history */}
             {!loading && currentChats.length > 0 ? (
                 <div>
                     {currentChats.map((chat) => (
@@ -133,7 +126,6 @@ const History = () => {
                 !loading && <p className="text-gray-500">No chat history available.</p>
             )}
 
-            {/* Pagination */}
             {history.length > messagesPerPage && Array.isArray(history) && (
                 <nav className="flex justify-center mt-4">
                     <ul className="flex list-style-none">
